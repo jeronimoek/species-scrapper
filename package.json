@@ -1,0 +1,23 @@
+{
+  "type": "module",
+  "name": "scrape-it",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeronimoek/species-scrapper.git"
+  },
+  "author": "Jeronimoek",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jeronimoek/species-scrapper/issues"
+  },
+  "homepage": "https://github.com/jeronimoek/species-scrapper#readme",
+  "dependencies": {
+    "scrape-it": "^5.3.2"
+  }
+}
