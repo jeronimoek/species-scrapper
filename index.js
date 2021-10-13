@@ -97,8 +97,8 @@ function switchGenerator (opts, extraInfo){
   return switchFunc
 }
 
-function processText ($, $container, switchFunc){
-  $container.children("span").each(function(i, span){
+function processText ($, $children, switchFunc){
+  $children.each(function(i, span){
     let $span = $(span)
     let text = $span.text().replace(/\s/g, " ")
     switchFunc(i,text)
@@ -127,32 +127,32 @@ async function scrapeSpecific(link){
               names.concat(twoEmpty).concat(extraNames).concat(ecoInfo),
               extraInfo
             )
-            processText($, $container, switchFunc)
+            processText($, $children, switchFunc)
           } else if (numOfIngles === 1){
             let switchFunc = switchGenerator(
               names.concat(twoEmpty).concat([extraNames[0]]).concat(ecoInfo),
               extraInfo
             )
-            processText($, $container, switchFunc)
+            processText($, $children, switchFunc)
           } else if (numOfIngles === 0){
             let switchFunc = switchGenerator(
               names.concat(twoEmpty).concat(ecoInfo),
               extraInfo
             )
-            processText($, $container, switchFunc)
+            processText($, $children, switchFunc)
           } else {
             let switchFunc = switchGenerator(
               names.concat(twoEmpty).concat(ecoInfo),
               extraInfo
             )
-            processText($, $container, switchFunc)
+            processText($, $children, switchFunc)
           }
         } else {
           let switchFunc = switchGenerator(
             names.concat(twoEmpty).concat(ecoInfo),
             extraInfo
           )
-          processText($, $container, switchFunc)
+          processText($, $children, switchFunc)
         }
       } else if ($children.hasClass("nombreingles")){
         let numOfIngles = $children.filter((i,el)=>$(el).hasClass("nombreingles")).length
@@ -161,33 +161,65 @@ async function scrapeSpecific(link){
             [names[1]].concat(twoEmpty).concat(extraNames).concat(ecoInfo),
             extraInfo
           )
-          processText($, $container, switchFunc)
+          processText($, $children, switchFunc)
         } else if (numOfIngles === 1){
           let switchFunc = switchGenerator(
             [names[1]].concat(twoEmpty).concat([extraNames[0]]).concat(ecoInfo),
             extraInfo
           )
-          processText($, $container, switchFunc)
+          processText($, $children, switchFunc)
         } else if (numOfIngles === 0){
           let switchFunc = switchGenerator(
             [names[1]].concat(twoEmpty).concat(ecoInfo),
             extraInfo
           )
-          processText($, $container, switchFunc)
+          processText($, $children, switchFunc)
         } else {
           let switchFunc = switchGenerator(
             [names[1]].concat(twoEmpty).concat(ecoInfo),
             extraInfo
           )
-          processText($, $container, switchFunc)
+          processText($, $children, switchFunc)
         }
       } else {
         let switchFunc = switchGenerator(
           [names[1]].concat(twoEmpty).concat(ecoInfo),
           extraInfo
         )
-        processText($, $container, switchFunc)
+        processText($, $children, switchFunc)
       }
+
+      const $registersCont = $('div.center')
+      const $registers = $registersCont.children('div[style*=width:300px]')
+      const allRegisters = []
+      $registers.each(function(i, registry){
+        let $registry = $(registry)
+        let imagePath = $registry.find("img#imagenChica")[0].attribs.src
+        let imageUrl = parseLink(imagePath)
+        const registryData = []
+        registryData["imgUrl"] = imageUrl
+
+        let dataCont = $registry.children("font")
+        let prov = ""
+        let data = $(dataCont).children("a").each((i,val)=>{
+          let $val = $(val)
+          let href = $val.attr("href")
+          let text = $val.text().replace(/\s/g, " ")
+          if(href.indexOf("lugardetallado.php") > -1){
+            registryData["zona"] = text
+          } else if(href.indexOf("lugar.php") > -1){
+            registryData["ciudad"] = text
+          } else if(href.indexOf("provincia.php") > -1){
+            prov = text
+          } else if(href.indexOf("php") == -1){
+            registryData["autor"] = text
+          }
+        })
+        if(prov == "Entre Ríos"){
+          allRegisters.push(registryData) 
+        }
+      })
+      extraInfo["info"]["registers"] = allRegisters
       resolve(extraInfo)
     }
   )
