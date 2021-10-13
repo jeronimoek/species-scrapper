@@ -80,6 +80,31 @@ async function scrapeInitial(actualId = 1){
   })
 }
 
+function switchGenerator (opts, extraInfo){
+  let switchFunc = (i, text) => {
+    if(opts[i]){
+      let filteredText = text
+      if(text.indexOf(":")>-1){
+        filteredText = text.replace(/[\w\sÀ-ÿ\u00f1\u00d1/]+:[\s]+/,"")
+      }
+      if(opts[i][0]){
+        extraInfo["info"][opts[i][1]] = filteredText
+      } else {
+        extraInfo[opts[i][1]] = filteredText
+      }
+    }
+  }
+  return switchFunc
+}
+
+function processText ($, $container, switchFunc){
+  $container.children("span").each(function(i, span){
+    let $span = $(span)
+    let text = $span.text().replace(/\s/g, " ")
+    switchFunc(i,text)
+  })
+}
+
 async function scrapeSpecific(link){
   console.log("scrapeSpecific")
   let promise = new Promise(
@@ -88,300 +113,80 @@ async function scrapeSpecific(link){
       const extraInfo = {info:{}}
       const $container = $("div.text-start")
       const $children = $container.children("span")
-      if(!$children.hasClass("nombreComunGrande")){
+
+      const names = [[false, "nombre_comun"],[false,"scientific_name"]]
+      const twoEmpty = [false,false]
+      const extraNames = [[true, "nombre_ingles"],[true,"nombre_port"]]
+      const ecoInfo = [[true, "familia"], [true, "orden"], [true, "clase"], [true, "filo"], [true, "reino"]]
+
+      if($children.hasClass("nombreComunGrande")){
         if($children.hasClass("nombreingles")){
           let numOfIngles = $children.filter((i,el)=>$(el).hasClass("nombreingles")).length
           if(numOfIngles === 2){
-            $container.children("span").each(function(i, span){
-              let $span = $(span)
-              let text = $span.text().replace(/\s/g, " ")
-              switch(i){
-                case 0:
-                  extraInfo["nombre_comun"] = text
-                  break
-                case 1:
-                  extraInfo["scientific_name"] = text
-                  break
-                case 3:
-                  extraInfo["info"]["nombre_ingles"] = text
-                  break
-                case 4:
-                  extraInfo["info"]["nombre_port"] = text
-                  break
-                case 5:
-                  extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                  break
-                case 6:
-                  extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                  break
-                case 7:
-                  extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                  break
-                case 8:
-                  extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                  break
-                case 9:
-                  extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                  break
-              }
-            })
+            let switchFunc = switchGenerator(
+              names.concat(twoEmpty).concat(extraNames).concat(ecoInfo),
+              extraInfo
+            )
+            processText($, $container, switchFunc)
           } else if (numOfIngles === 1){
-            $container.children("span").each(function(i, span){
-              let $span = $(span)
-              let text = $span.text().replace(/\s/g, " ")
-              switch(i){
-                case 0:
-                  extraInfo["scientific_name"] = text
-                  break
-                case 2:
-                  extraInfo["info"]["nombre_ingles"] = text
-                  break
-                case 3:
-                  extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                  break
-                case 4:
-                  extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                  break
-                case 5:
-                  extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                  break
-                case 6:
-                  extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                  break
-                case 7:
-                  extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                  break
-              }
-            })
+            let switchFunc = switchGenerator(
+              names.concat(twoEmpty).concat([extraNames[0]]).concat(ecoInfo),
+              extraInfo
+            )
+            processText($, $container, switchFunc)
           } else if (numOfIngles === 0){
-            $container.children("span").each(function(i, span){
-              let $span = $(span)
-              let text = $span.text().replace(/\s/g, " ")
-              switch(i){
-                case 0:
-                  extraInfo["scientific_name"] = text
-                  break
-                case 2:
-                  extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                  break
-                case 3:
-                  extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                  break
-                case 4:
-                  extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                  break
-                case 5:
-                  extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                  break
-                case 6:
-                  extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                  break
-              }
-            })
+            let switchFunc = switchGenerator(
+              names.concat(twoEmpty).concat(ecoInfo),
+              extraInfo
+            )
+            processText($, $container, switchFunc)
           } else {
-            $container.children("span").each(function(i, span){
-              let $span = $(span)
-              let text = $span.text().replace(/\s/g, " ")
-              switch(i){
-                case 0:
-                  extraInfo["scientific_name"] = text
-                  break
-                case 2:
-                  extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                  break
-                case 3:
-                  extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                  break
-                case 4:
-                  extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                  break
-                case 5:
-                  extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                  break
-                case 6:
-                  extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                  break
-              }
-            })
+            let switchFunc = switchGenerator(
+              names.concat(twoEmpty).concat(ecoInfo),
+              extraInfo
+            )
+            processText($, $container, switchFunc)
           }
         } else {
-          $container.children("span").each(function(i, span){
-            let $span = $(span)
-            let text = $span.text().replace(/\s/g, " ")
-            switch(i){
-              case 0:
-                extraInfo["scientific_name"] = text
-                break
-              case 2:
-                extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                break
-              case 3:
-                extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                break
-              case 4:
-                extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                break
-              case 5:
-                extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                break
-              case 6:
-                extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                break
-            }
-          })
+          let switchFunc = switchGenerator(
+            names.concat(twoEmpty).concat(ecoInfo),
+            extraInfo
+          )
+          processText($, $container, switchFunc)
         }
       } else if ($children.hasClass("nombreingles")){
         let numOfIngles = $children.filter((i,el)=>$(el).hasClass("nombreingles")).length
         if(numOfIngles === 2){
-          $container.children("span").each(function(i, span){
-            let $span = $(span)
-            let text = $span.text().replace(/\s/g, " ")
-            switch(i){
-              case 0:
-                extraInfo["nombre_comun"] = text
-                break
-              case 1:
-                extraInfo["scientific_name"] = text
-                break
-              case 3:
-                extraInfo["info"]["nombre_ingles"] = text
-                break
-              case 4:
-                extraInfo["info"]["nombre_port"] = text
-                break
-              case 5:
-                extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                break
-              case 6:
-                extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                break
-              case 7:
-                extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                break
-              case 8:
-                extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                break
-              case 9:
-                extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                break
-            }
-          })
+          let switchFunc = switchGenerator(
+            [names[1]].concat(twoEmpty).concat(extraNames).concat(ecoInfo),
+            extraInfo
+          )
+          processText($, $container, switchFunc)
         } else if (numOfIngles === 1){
-          $container.children("span").each(function(i, span){
-            let $span = $(span)
-            let text = $span.text().replace(/\s/g, " ")
-            switch(i){
-              case 0:
-                extraInfo["nombre_comun"] = text
-                break
-              case 1:
-                extraInfo["scientific_name"] = text
-                break
-              case 3:
-                extraInfo["info"]["nombre_ingles"] = text
-                break
-              case 4:
-                extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                break
-              case 5:
-                extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                break
-              case 6:
-                extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                break
-              case 7:
-                extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                break
-              case 8:
-                extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                break
-            }
-          })
+          let switchFunc = switchGenerator(
+            [names[1]].concat(twoEmpty).concat([extraNames[0]]).concat(ecoInfo),
+            extraInfo
+          )
+          processText($, $container, switchFunc)
         } else if (numOfIngles === 0){
-          $container.children("span").each(function(i, span){
-            let $span = $(span)
-            let text = $span.text().replace(/\s/g, " ")
-            switch(i){
-              case 0:
-                extraInfo["nombre_comun"] = text
-                break
-              case 1:
-                extraInfo["scientific_name"] = text
-                break
-              case 3:
-                extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                break
-              case 4:
-                extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                break
-              case 5:
-                extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                break
-              case 6:
-                extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                break
-              case 7:
-                extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                break
-            }
-          })
+          let switchFunc = switchGenerator(
+            [names[1]].concat(twoEmpty).concat(ecoInfo),
+            extraInfo
+          )
+          processText($, $container, switchFunc)
         } else {
-          $container.children("span").each(function(i, span){
-            let $span = $(span)
-            let text = $span.text().replace(/\s/g, " ")
-            switch(i){
-              case 0:
-                extraInfo["nombre_comun"] = text
-                break
-              case 1:
-                extraInfo["scientific_name"] = text
-                break
-              case 3:
-                extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-                break
-              case 4:
-                extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-                break
-              case 5:
-                extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-                break
-              case 6:
-                extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-                break
-              case 7:
-                extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-                break
-            }
-          })
+          let switchFunc = switchGenerator(
+            [names[1]].concat(twoEmpty).concat(ecoInfo),
+            extraInfo
+          )
+          processText($, $container, switchFunc)
         }
       } else {
-        $container.children("span").each(function(i, span){
-          let $span = $(span)
-          let text = $span.text().replace(/\s/g, " ")
-          switch(i){
-            case 0:
-              extraInfo["nombre_comun"] = text
-              break
-            case 1:
-              extraInfo["scientific_name"] = text
-              break
-            case 3:
-              extraInfo["info"]["familia"] = text.replace("Familia:","").trim()
-              break
-            case 4:
-              extraInfo["info"]["orden"] = text.replace("Orden:","").trim()
-              break
-            case 5:
-              extraInfo["info"]["clase"] = text.replace("Clase:","").trim()
-              break
-            case 6:
-              extraInfo["info"]["filo"] = text.replace("Filo / División:","").trim()
-              break
-            case 7:
-              extraInfo["info"]["reino"] = text.replace("Reino:","").trim()
-              break
-          }
-        })
+        let switchFunc = switchGenerator(
+          [names[1]].concat(twoEmpty).concat(ecoInfo),
+          extraInfo
+        )
+        processText($, $container, switchFunc)
       }
       resolve(extraInfo)
     }
