@@ -68,7 +68,7 @@ async function scrapeGroup(places = {}, grupoId = 8, actualId = 1){
                         if(registry.lugarDetallado){
                           places = {
                             ...places,
-                            ...{[registry.lugar]: {"lugar": registry.lugar, "count":1 , "lugaresDetallados": {[registry.lugarDetallado] : {"species": [scName]}}}}
+                            ...{[registry.lugar]: {"lugar": registry.lugar, "count":1 , "lugaresDetallados": {[registry.lugarDetallado] : {"species": [scName]}}, "species": []}}
                           }
                         } else {
                           places = {
@@ -80,10 +80,13 @@ async function scrapeGroup(places = {}, grupoId = 8, actualId = 1){
                         if(!places[registry.lugar].lugaresDetallados[registry.lugarDetallado]){
                           if(registry.lugarDetallado){
                             places[registry.lugar].lugaresDetallados[registry.lugarDetallado] = {"species": [scName]}
+                            places[registry.lugar].count += 1
                           } else {
-                            places[registry.lugar].species = [scName]
+                            if(places[registry.lugar].species.indexOf(scName) === -1){
+                              places[registry.lugar].species.push(scName)
+                              places[registry.lugar].count += 1
+                            }
                           }
-                          places[registry.lugar].count += 1
                         } else {
                           if(registry.lugarDetallado){
                             if (places[registry.lugar].lugaresDetallados[registry.lugarDetallado].species.indexOf(scName) === -1){
