@@ -19,8 +19,10 @@
   "homepage": "https://github.com/jeronimoek/species-scrapper#readme",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.36.0",
+    "@qualdesk/firestore-big-batch": "^0.0.2",
     "aws-sdk": "^2.1003.0",
     "axios": "^0.22.0",
-    "cheerio": "^1.0.0-rc.10"
+    "cheerio": "^1.0.0-rc.10",
+    "firebase-admin": "^10.0.0"
   }
 }

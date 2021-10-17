@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio'
 import axios from 'axios'
 import { urlConfig } from "./config.js"
-import putSpecies from "./put.js"
+//import putSpecies from './dynamoUtils/putSpecies.js'
+import uploadSpecies from './firebaseUtils/uploadSpecies.js'
 
 function parseLink(path){
   let link = path.replace("..", urlConfig.MY_URL)
@@ -19,65 +20,98 @@ async function getCheerio(url){
   return $
 }
 
-async function scrapeInitial(actualId = 1){
-  const $ = await getCheerio(urlConfig.MY_INITIAL_URL + "&page=" + actualId)
-  let interval = 1000
-  $("table.table.left tr").each(async function(i, speciesAllData){      // Especies loop
-    setTimeout(
-      ()=>{
-        if(i===0){return}
-        if(i===300){
-          scrapeInitial(actualId+1)
-        }
+async function scrapeAll(){
+  let allSpecies = []
+  for(let i = 1; i <= 22; i++){
+    try {
+      let groupSpecies = await scrapeInitial(i)
+      allSpecies = allSpecies.concat(groupSpecies)
+    } catch (error) {
+      console.log("Error: ",error)
+    }
+  }
+  uploadSpecies(allSpecies, "Species")
+}
+
+async function scrapeInitial(grupoId = 8, actualId = 1){
+  const url = urlConfig.MY_INITIAL_URL + "&idgrupoclase=" + grupoId + "&page=" + actualId
+  const $ = await getCheerio(url)
   
-        let $speciesAllData = $(speciesAllData)
-        const species = {info:{}}
-        const promises = []
-        console.log("id:",i+(actualId-1)*300)                           // Print id
-        $speciesAllData.children("td").each(async function(i,data){     // Data de especie loop
-          let $data = $(data)
-          let text = $data.text().replace(/\s/g, " ")                   // Texto de la data
-          switch(i){                                                    // Switch case based on column
-            case 3:
-              species["nombre_comun"] = text
-              break
-            case 4:
-              species["info"]["nombre_ingles"] = text
-              break
-            case 5:
-              species["info"]["nombre_port"] = text
-              break
-            case 6:
-              species["scientific_name"] = text
-              let path = $data.children("a").attr("href")
-              let link = parseLink(path)
-              species["url"] = link
-              const extraInfoPromise = new Promise(                     // Promise for extra info about this species.
-                async (resolve, reject) => {                            // Resolved after adding extra info to species info
-                  let extraInfo = await scrapeSpecific(link)
-                  if(species["scientific_name"] == extraInfo["scientific_name"]){
-                    species["info"] = {
-                      ...species["info"],
-                      ...extraInfo["info"]
+  console.log(url)
+
+  let interval = 700
+  const speciesPromises = []
+  const allSpecies = []
+  $("table.table.left tr").each(async function(i, speciesAllData){      // Especies loop
+    const speciesPromise = new Promise(
+      async (speciesResolver, reject) => {
+        setTimeout(
+          ()=>{
+            if(i===0){
+              speciesResolver("SUCCESS-null")
+              return
+            }
+      
+            let $speciesAllData = $(speciesAllData)
+            const species = {info:{}}
+            const promises = []
+            console.log("id:",i+(actualId-1)*300)                           // Print id
+            $speciesAllData.children("td").each(async function(i,data){     // Data de especie loop
+              let $data = $(data)
+              let text = $data.text().replace(/\s/g, " ")                   // Texto de la data
+              switch(i){                                                    // Switch case based on column
+                case 3:
+                  species["nombre_comun"] = text
+                  break
+                case 4:
+                  species["info"]["nombre_ingles"] = text
+                  break
+                case 5:
+                  species["info"]["nombre_port"] = text
+                  break
+                case 6:
+                  species["scientific_name"] = text
+                  let path = $data.children("a").attr("href")
+                  let link = parseLink(path)
+                  species["url"] = link
+                  const extraInfoPromise = new Promise(                     // Promise for extra info about this species.
+                    async (resolve, reject) => {                            // Resolved after adding extra info to species info
+                      let extraInfo = await scrapeSpecific(link)
+                      if(species["scientific_name"] == extraInfo["scientific_name"]){
+                        species["info"] = {
+                          ...species["info"],
+                          ...extraInfo["info"]
+                        }
+                      } else {
+                        reject("Error!!! - SCIENTIFIC NAME DOES NOT MATCH")
+                      }
+                      resolve("SUCCESS")
                     }
-                  } else {
-                    reject("Error!!! - SCIENTIFIC NAME DOES NOT MATCH")
-                  }
-                  resolve("SUCCESS")
-                }
-              )
-              promises.push(extraInfoPromise)                           // Added to promises list
-              break
-          }
-        })
-        Promise.all(promises).then(                                     // Waiting for all promises about extra info to finish   
-          async () => {
-            await putSpecies(species)
-          }
+                  )
+                  promises.push(extraInfoPromise)                           // Added to promises list
+                  break
+              }
+            })
+
+            if(i===300){
+              promises.push(scrapeInitial(grupoId,actualId+1))
+            }
+
+            Promise.all(promises).then(                                     // Waiting for all promises about extra info to finish   
+              async () => {
+                allSpecies.push(species)
+                //await putSpecies(species)
+                speciesResolver("SUCCESS")
+              }
+            )
+          }, (i-1)*interval                                                 // Para no saturar la web
         )
-      }, (i-1)*interval                                                 // Para no saturar la web
+      }
     )
+    speciesPromises.push(speciesPromise)
   })
+  await Promise.all(speciesPromises)
+  return allSpecies
 }
 
 function switchGenerator (opts, extraInfo){
@@ -196,12 +230,12 @@ async function scrapeSpecific(link){
         let $registry = $(registry)
         let imagePath = $registry.find("img#imagenChica")[0].attribs.src
         let imageUrl = parseLink(imagePath)
-        const registryData = []
+        const registryData = {}
         registryData["imgUrl"] = imageUrl
 
         let dataCont = $registry.children("font")
         let prov = ""
-        let data = $(dataCont).children("a").each((i,val)=>{
+        $(dataCont).children("a").each((i,val)=>{
           let $val = $(val)
           let href = $val.attr("href")
           let text = $val.text().replace(/\s/g, " ")
@@ -226,4 +260,4 @@ async function scrapeSpecific(link){
   return promise
 }
 
-scrapeInitial()
+scrapeAll()

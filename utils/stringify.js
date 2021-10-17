@@ -18,7 +18,22 @@ function stringify(value, use) {
     }
     return objString;
   }
-  if (typeof value === 'object') {
+  if (Array.isArray(value)){
+    objString += '[';
+    for (let i = 0; i<value.length; i++) {
+      if(value[i]){
+        objString += stringify(value[i]);
+        if (i < (value.length-1)) {
+          objString += ',';
+        }
+      } else {
+        if((i < (value.length-1)) && (objString.slice(objString.length - 1) === ",")){
+          objString = objString.slice(0,objString.length - 1)
+        }
+      }
+    }
+    objString += ']';
+  } else if (typeof value === 'object') {
     objString += '{';
     for (const key in value) {
       if(value[key]){
