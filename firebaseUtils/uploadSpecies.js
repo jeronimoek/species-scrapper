@@ -15,10 +15,12 @@ function uploadSpecies (data, collection = "Species") {
       console.log(species)
       const docRef = db.collection(collection).doc(species["scientific_name"])
       batch.set(docRef, species)
+    } else {
+      console.log("Species ERROR => ", species)
     }
   })
   batch.commit()
-    .then( (d) => console.log("uploaded species",d) )
+    .then( (d) => console.log("uploaded species",data.length) )
     .catch( (e) => console.log(e) )
 }
 

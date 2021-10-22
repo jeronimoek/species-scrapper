@@ -33,15 +33,14 @@ async function scrapeAll(){
   uploadSpecies(allSpecies, "Species")
 }
 
-async function scrapeInitial(grupoId = 8, actualId = 1){
+async function scrapeInitial(grupoId = 8, actualId = 1,allSpecies=[]){
   const url = urlConfig.MY_INITIAL_URL + "&idgrupoclase=" + grupoId + "&page=" + actualId
   const $ = await getCheerio(url)
   
   console.log(url)
 
-  let interval = 700
+  let interval = 1000
   const speciesPromises = []
-  const allSpecies = []
   $("table.table.left tr").each(async function(i, speciesAllData){      // Especies loop
     const speciesPromise = new Promise(
       async (speciesResolver, reject) => {
@@ -77,12 +76,14 @@ async function scrapeInitial(grupoId = 8, actualId = 1){
                   const extraInfoPromise = new Promise(                     // Promise for extra info about this species.
                     async (resolve, reject) => {                            // Resolved after adding extra info to species info
                       let extraInfo = await scrapeSpecific(link)
+                      console.log(species, extraInfo)
                       if(species["scientific_name"] == extraInfo["scientific_name"]){
                         species["info"] = {
                           ...species["info"],
                           ...extraInfo["info"]
                         }
                       } else {
+                        console.log("Error!!! - SCIENTIFIC NAME DOES NOT MATCH")
                         reject("Error!!! - SCIENTIFIC NAME DOES NOT MATCH")
                       }
                       resolve("SUCCESS")
@@ -94,7 +95,7 @@ async function scrapeInitial(grupoId = 8, actualId = 1){
             })
 
             if(i===300){
-              promises.push(scrapeInitial(grupoId,actualId+1))
+              promises.push(scrapeInitial(grupoId,actualId+1,allSpecies))
             }
 
             Promise.all(promises).then(                                     // Waiting for all promises about extra info to finish   
